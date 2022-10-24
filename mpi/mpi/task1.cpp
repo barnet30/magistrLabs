@@ -5,7 +5,7 @@
 
 // mpiexec -n 4 mpi.exe
 
-int main()
+int main1()
 {
 	MPI_Status status;
 

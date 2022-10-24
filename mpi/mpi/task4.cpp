@@ -4,9 +4,13 @@
 #include "math.h"
 #include <ctime>
 #include <vector>
+#include <array>
+#include <memory>
+#include <iostream>
 
 
-// mpiexec -n 2 mpi.exe
+
+// mpiexec -n 4 mpi.exe
 
 int main4()
 {
@@ -19,20 +23,28 @@ int main4()
     int ProcNum;
     int rank;
     srand(time(0));
-    std::vector<int> x(N);
-    std::vector<int> y(N);
-    std::vector<int> z(N);
+    std::array<int,N> x;
+    std::array<int,N> y;
+    std::array<int,N> z;
 
 
     MPI_Init(NULL, NULL);
     MPI_Comm_size(MPI_COMM_WORLD, &ProcNum);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
+    if (ProcNum < 2)
+    {
+        std::cout << "Number of processes is not enough";
+        MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+        return EXIT_FAILURE;
+
+    }
+
     if (rank == GENERAL_PROCESS)
     {
         MPI_Status status;
 
-        printf("%i proccess create array a\n", rank);
+        printf("%i proccess create arrays x and y\n", rank);
         srand(time(0));
 
         for (int i = 0;i < N;i++)
@@ -41,41 +53,64 @@ int main4()
             y[i] = rand() % 100 + 1;
         }
 
-        // ProcNum - 1, cause of 0 proccess doesn't partiipate in calculations
-        std::vector<std::pair<int, int>> batches(ProcNum - 1, std::make_pair(0, 0));
-        for (int i = 1; i < ProcNum; i++)
+        // ProcNum - 1, cause of 0 proccess doesn't participate in calculations
+        std::vector < std::pair<int, std::pair<int, int>>> batches(ProcNum - 1, std::make_pair(0, std::make_pair(0, 0)));
+        for (int i = 0; i < ProcNum-1; i++)
         {
-            int batch = (int)round((double)N / ProcNum - 1);
-            if (N % ProcNum != 0 && i == ProcNum - 1)
+            int procToSend = i+1;
+            int batch = (int)round((double)N / (ProcNum - 1));
+            if (N % ProcNum != 0 && procToSend == (ProcNum - 1))
             {
-                batch = N - (ProcNum - 1) * batch;
+                batch = N - (procToSend - 1) * batch;
             }
+            int beginIdx = i * batch;
+            if (procToSend == (ProcNum - 1))
+                beginIdx = batches[i - 1].second.second + 1;
 
-            batches[i - 1].first = i;
-            batches[i - 1].second = batch;
+            batches[i].first = procToSend;
+            batches[i].second.first = beginIdx;
+            batches[i].second.second = beginIdx + batch - 1;
+            beginIdx = beginIdx * i + batch;
+            //std::cout << batches[i].first << " " << batches[i].second.first << " " << batches[i].second.second << " " << batch << std::endl;
         }
 
-        for (int i = 0; i < ProcNum - 2; i++)
+        for (int i = 0; i < ProcNum - 1; i++)
         {
-            int batchSize = batches[i].second;
+            int beginIdx = batches[i].second.first;
+            int endIdx = batches[i].second.second;
+            int batchSize = endIdx - beginIdx + 1;
             int offset = i * batchSize;
             int procToSend = batches[i].first;
 
-            MPI_Send(x.data() + offset, batchSize, MPI_INT, procToSend, 0, MPI_COMM_WORLD);
-            MPI_Send(y.data() + offset, batchSize, MPI_INT, procToSend, 1, MPI_COMM_WORLD);
+            std::vector<int> xToSend(batchSize);
+            std::vector<int> yToSend(batchSize);
+
+            for (int j = beginIdx, k = 0; j <= endIdx && k < batchSize;j++, k++)
+            {
+                xToSend[k] = x[j];
+                yToSend[k] = y[j];
+            }
+
+
+            MPI_Send(xToSend.data(), batchSize, MPI_INT, procToSend, 1, MPI_COMM_WORLD);
+            MPI_Send(yToSend.data(), batchSize, MPI_INT, procToSend, 0, MPI_COMM_WORLD);
         }
 
-        for (int i = 1; i < ProcNum; i++)
+
+        for (int i = 0; i < ProcNum - 1; i++)
         {
-            int batchSize = batches[i].second;
+            int beginIdx = batches[i].second.first;
+            int endIdx = batches[i].second.second;
+            int batchSize = endIdx - beginIdx + 1;
             int offset = i * batchSize;
             int procFromRecv = batches[i].first;
 
-            MPI_Recv(z.data() + offset, batchSize, MPI_INT, procFromRecv, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+            //std::cout << procFromRecv << " " << batchSize << " " << beginIdx << std::endl;
+            MPI_Recv(z.data() + beginIdx, batchSize, MPI_INT, procFromRecv, MPI_ANY_TAG, MPI_COMM_WORLD, &status);            
         }
 
-        for (int i = 0; i < z.size(); i++) {
-            printf("z[%u]=%u : x[%u]=%u : y[%u]=%u\n", i, z[i], i, x[i], i, y[i]);
+        for (int j = 0; j < z.size(); j++) {
+            printf("z[%u]=%u : x[%u]=%u : y[%u]=%u\n", j, z[j], j, x[j], j, y[j]);
         }
         
     }
@@ -90,8 +125,8 @@ int main4()
         std::vector<int> bufferY(count);
         std::vector<int> resultBatch(count);
 
-        MPI_Recv(bufferX.data(), (int)count, MPI_INT, status.MPI_SOURCE, 0, (MPI_Comm)MPI_COMM_WORLD, &status);
-        MPI_Recv(bufferY.data(), (int)count, MPI_INT, status.MPI_SOURCE, 1, (MPI_Comm)MPI_COMM_WORLD, &status);
+        MPI_Recv(bufferX.data(), (int)count, MPI_INT, status.MPI_SOURCE, 1, (MPI_Comm)MPI_COMM_WORLD, &status);
+        MPI_Recv(bufferY.data(), (int)count, MPI_INT, status.MPI_SOURCE, 0, (MPI_Comm)MPI_COMM_WORLD, &status);
 
         if (calcSum)
             for (int i = 0; i < count;i++)
@@ -108,8 +143,6 @@ int main4()
         MPI_Send(resultBatch.data(), count, MPI_INT, GENERAL_PROCESS, 0, MPI_COMM_WORLD);
 
     }
-
-
 
     MPI_Finalize();
 
