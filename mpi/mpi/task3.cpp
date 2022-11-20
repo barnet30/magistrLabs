@@ -49,6 +49,7 @@ int main3()
         for (int i = 0;i < count;i++)
             printf("%i ", buff_array[i]);
         printf("\n");
+        delete[] buff_array;
     }
 
 

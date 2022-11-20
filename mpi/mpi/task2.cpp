@@ -27,12 +27,15 @@ int main2()
         printf("%i rank create array a\n", rank);
         srand(time(0));
         for (int i = 0;i < N;i++)
+        {
             a[i] = rand() % 100 + 1;
-        MPI_Send(a, N, MPI_INT, 1, 0, (MPI_Comm)MPI_COMM_WORLD);
+            printf("%i ", a[i]);
+        }
+        MPI_Send(a, N-1, MPI_INT, 1, 0, (MPI_Comm)MPI_COMM_WORLD);
     }
     else 
     {
-        MPI_Recv(a, N, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+        MPI_Recv(a, N-1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
         printf("%i process show us array a:\n", rank);
         for (int i = 0;i < N;i++)
             printf("%i ", a[i]);

@@ -9,10 +9,9 @@
 #include <iostream>
 
 
-
 // mpiexec -n 4 mpi.exe
 
-int main4()
+int main5()
 {
     const int N = 10;
     const int GENERAL_PROCESS = 0;
@@ -23,9 +22,9 @@ int main4()
     int ProcNum;
     int rank;
     srand(time(0));
-    std::array<int,N> x;
-    std::array<int,N> y;
-    std::array<int,N> z;
+    std::array<int, N> x;
+    std::array<int, N> y;
+    std::array<int, N> z;
 
 
     MPI_Init(NULL, NULL);
@@ -55,9 +54,9 @@ int main4()
 
         // ProcNum - 1, cause of 0 proccess doesn't participate in calculations
         std::vector < std::pair<int, std::pair<int, int>>> batches(ProcNum - 1, std::make_pair(0, std::make_pair(0, 0)));
-        for (int i = 0; i < ProcNum-1; i++)
+        for (int i = 0; i < ProcNum - 1; i++)
         {
-            int procToSend = i+1;
+            int procToSend = i + 1;
             int batch = (int)round((double)N / (ProcNum - 1));
             if (N % ProcNum != 0 && procToSend == (ProcNum - 1))
             {
@@ -70,7 +69,7 @@ int main4()
             batches[i].first = procToSend;
             batches[i].second.first = beginIdx;
             batches[i].second.second = beginIdx + batch - 1;
-            //beginIdx = beginIdx * i + batch;
+            beginIdx = beginIdx * i + batch;
             //std::cout << batches[i].first << " " << batches[i].second.first << " " << batches[i].second.second << " " << batch << std::endl;
         }
 
@@ -79,7 +78,7 @@ int main4()
             int beginIdx = batches[i].second.first;
             int endIdx = batches[i].second.second;
             int batchSize = endIdx - beginIdx + 1;
-            //int offset = i * batchSize;
+            int offset = i * batchSize;
             int procToSend = batches[i].first;
 
             std::vector<int> xToSend(batchSize);
@@ -105,20 +104,19 @@ int main4()
             int offset = i * batchSize;
             int procFromRecv = batches[i].first;
 
-            std::cout << procFromRecv << " " << batchSize << " " << beginIdx << std::endl;
-            MPI_Recv(z.data() + beginIdx, batchSize, MPI_INT, procFromRecv, MPI_ANY_TAG, MPI_COMM_WORLD, &status); 
-            for (int j = beginIdx; j <= endIdx; j++) {
-                printf("z[%u]=%u : x[%u]=%u : y[%u]=%u\n", j, z[j], j, x[j], j, y[j]);
-            }
+            //std::cout << procFromRecv << " " << batchSize << " " << beginIdx << std::endl;
+            MPI_Recv(z.data() + beginIdx, batchSize, MPI_INT, procFromRecv, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
         }
 
-       
-        
+        for (int j = 0; j < z.size(); j++) {
+            printf("z[%u]=%u : x[%u]=%u : y[%u]=%u\n", j, z[j], j, x[j], j, y[j]);
+        }
+
     }
     else
     {
         MPI_Status status;
-        int count; 
+        int count;
         MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
         MPI_Get_count(&status, MPI_INT, &count);
 
@@ -126,8 +124,8 @@ int main4()
         std::vector<int> bufferY(count);
         std::vector<int> resultBatch(count);
 
-        MPI_Recv(bufferX.data(), count, MPI_INT, status.MPI_SOURCE, 1, (MPI_Comm)MPI_COMM_WORLD, &status);
-        MPI_Recv(bufferY.data(), count, MPI_INT, status.MPI_SOURCE, 0, (MPI_Comm)MPI_COMM_WORLD, &status);
+        MPI_Recv(bufferX.data(), (int)count, MPI_INT, status.MPI_SOURCE, 1, (MPI_Comm)MPI_COMM_WORLD, &status);
+        MPI_Recv(bufferY.data(), (int)count, MPI_INT, status.MPI_SOURCE, 0, (MPI_Comm)MPI_COMM_WORLD, &status);
 
         if (calcSum)
             for (int i = 0; i < count;i++)
