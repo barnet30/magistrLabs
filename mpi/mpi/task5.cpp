@@ -1,3 +1,10 @@
+/*
+* Пусть на нулевом процессе задана матрица А и вектор х. Написать программу, вкоторой  матрица  равными  блоками  с  нулевого  процесса  
+* пересылается  остальным процессам.  Пересылка  данных  осуществляется  функцией  MPI_Send.  Все  процессы  по формуле  вычисляют  свои  
+* элементы  искомых  массивов.  Каждый  процесс  отправляет  на нулевой процесс посчитанные элементы массивов. В программе реализовать операцию 
+* x = diag(A)  - выделения главной диагонали.
+*/
+
 #include "stdio.h"
 #include "mpi.h"
 #include "stdlib.h"
@@ -7,140 +14,139 @@
 #include <array>
 #include <memory>
 #include <iostream>
+using namespace std;
 
 
 // mpiexec -n 4 mpi.exe
 
 int main5()
 {
-    const int N = 10;
+    const int N = 5;
+    int diagonalElement;
     const int GENERAL_PROCESS = 0;
-    const int FIRST_PROCESS = 1;
-    const bool calcSum = true;
-    const bool calcMult = false;
+    const int STATUS_OK = 200;
+    const int STATUS_END = 202;
+    const int STATUS_NOT_FOUND = 404;
 
     int ProcNum;
-    int rank;
+    int ProcRank;
     srand(time(0));
-    std::array<int, N> x;
-    std::array<int, N> y;
-    std::array<int, N> z;
 
 
     MPI_Init(NULL, NULL);
     MPI_Comm_size(MPI_COMM_WORLD, &ProcNum);
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_rank(MPI_COMM_WORLD, &ProcRank);
+    int statusWork = STATUS_OK;
 
-    if (ProcNum < 2)
-    {
-        std::cout << "Number of processes is not enough";
-        MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
-        return EXIT_FAILURE;
+    if (ProcRank == GENERAL_PROCESS) {
 
-    }
-
-    if (rank == GENERAL_PROCESS)
-    {
-        MPI_Status status;
-
-        printf("%i proccess create arrays x and y\n", rank);
-        srand(time(0));
-
-        for (int i = 0;i < N;i++)
+        vector<int> result;
+        int** matrix = new int*[N];
+        for (int i = 0; i < N;i++)
         {
-            x[i] = rand() % 100 + 1;
-            y[i] = rand() % 100 + 1;
+            matrix[i] = new int[N];
         }
 
-        // ProcNum - 1, cause of 0 proccess doesn't participate in calculations
-        std::vector < std::pair<int, std::pair<int, int>>> batches(ProcNum - 1, std::make_pair(0, std::make_pair(0, 0)));
-        for (int i = 0; i < ProcNum - 1; i++)
+        for (int i = 0; i < N;i++)
         {
-            int procToSend = i + 1;
-            int batch = (int)round((double)N / (ProcNum - 1));
-            if (N % ProcNum != 0 && procToSend == (ProcNum - 1))
+            for (int j = 0;j < N;j++)
             {
-                batch = N - (procToSend - 1) * batch;
+                matrix[i][j] = rand() % 100 + 1;
+                printf("%u ", matrix[i][j]);
             }
-            int beginIdx = i * batch;
-            if (procToSend == (ProcNum - 1))
-                beginIdx = batches[i - 1].second.second + 1;
-
-            batches[i].first = procToSend;
-            batches[i].second.first = beginIdx;
-            batches[i].second.second = beginIdx + batch - 1;
-            beginIdx = beginIdx * i + batch;
-            //std::cout << batches[i].first << " " << batches[i].second.first << " " << batches[i].second.second << " " << batch << std::endl;
+            printf("\n");
         }
 
-        for (int i = 0; i < ProcNum - 1; i++)
-        {
-            int beginIdx = batches[i].second.first;
-            int endIdx = batches[i].second.second;
-            int batchSize = endIdx - beginIdx + 1;
-            int offset = i * batchSize;
-            int procToSend = batches[i].first;
+        for (int i = 0; i < N && statusWork != STATUS_NOT_FOUND; i += ProcNum - 1) {
 
-            std::vector<int> xToSend(batchSize);
-            std::vector<int> yToSend(batchSize);
+            for (int id = 1; id < ProcNum; id++) {
 
-            for (int j = beginIdx, k = 0; j <= endIdx && k < batchSize;j++, k++)
-            {
-                xToSend[k] = x[j];
-                yToSend[k] = y[j];
+                // break if no rows
+                int rowI = i + id - 1;
+                if (rowI >= N) {
+                    break;
+                }
+
+                // send status
+                statusWork = STATUS_OK;
+                MPI_Send(&statusWork, 1, MPI_INT, id, 1, MPI_COMM_WORLD);
+
+                // send row & index of row 
+                MPI_Send(matrix[rowI], N, MPI_INT, id, 0, MPI_COMM_WORLD);
+                MPI_Send(&rowI, 1, MPI_INT, id, 0, MPI_COMM_WORLD);
             }
 
+            // receiving results of all proc
+            for (int id = 1; id < ProcNum; id++) {
 
-            MPI_Send(xToSend.data(), batchSize, MPI_INT, procToSend, 1, MPI_COMM_WORLD);
-            MPI_Send(yToSend.data(), batchSize, MPI_INT, procToSend, 0, MPI_COMM_WORLD);
-        }
+                // break if no procs
+                int rowI = i + id - 1;
+                if (rowI >= N) {
+                    break;
+                }
 
+                MPI_Recv(&statusWork, 1, MPI_INT, id, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                if (statusWork == STATUS_NOT_FOUND)
+                    break;
 
-        for (int i = 0; i < ProcNum - 1; i++)
-        {
-            int beginIdx = batches[i].second.first;
-            int endIdx = batches[i].second.second;
-            int batchSize = endIdx - beginIdx + 1;
-            int offset = i * batchSize;
-            int procFromRecv = batches[i].first;
+                // recv diagonal item
+                MPI_Recv(&diagonalElement, 1, MPI_INT, id, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                result.push_back(diagonalElement);
+            }
+        }  
 
-            //std::cout << procFromRecv << " " << batchSize << " " << beginIdx << std::endl;
-            MPI_Recv(z.data() + beginIdx, batchSize, MPI_INT, procFromRecv, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-        }
+        statusWork = STATUS_END;
+        for (int id = 1; id < ProcNum; id++) {
+            MPI_Send(&statusWork, 1, MPI_INT, id, 1, MPI_COMM_WORLD);
+        };
 
-        for (int j = 0; j < z.size(); j++) {
-            printf("z[%u]=%u : x[%u]=%u : y[%u]=%u\n", j, z[j], j, x[j], j, y[j]);
-        }
+        printf("\nResult:\n");
+        for (int i = 0; i < N;i++)
+            printf("%u ", result[i]);
 
+        for (int i = 0; i < N;i++)
+            delete[] matrix[i];
+        delete[] matrix;
     }
     else
     {
-        MPI_Status status;
-        int count;
-        MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-        MPI_Get_count(&status, MPI_INT, &count);
+        int row[N];
+        int rowI;
+        int statusWork;
 
-        std::vector<int> bufferX(count);
-        std::vector<int> bufferY(count);
-        std::vector<int> resultBatch(count);
+        while (true) {
 
-        MPI_Recv(bufferX.data(), (int)count, MPI_INT, status.MPI_SOURCE, 1, (MPI_Comm)MPI_COMM_WORLD, &status);
-        MPI_Recv(bufferY.data(), (int)count, MPI_INT, status.MPI_SOURCE, 0, (MPI_Comm)MPI_COMM_WORLD, &status);
 
-        if (calcSum)
-            for (int i = 0; i < count;i++)
-            {
-                resultBatch[i] = bufferX[i] + bufferY[i];
+            MPI_Recv(&statusWork, 1, MPI_INT, GENERAL_PROCESS, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+            if (statusWork == STATUS_END) {
+                break;
             }
 
-        if (calcMult)
-            for (int i = 0; i < count;i++)
-            {
-                resultBatch[i] = bufferX[i] * bufferY[i];
-            }
+            // recv row
+            MPI_Recv(row, N, MPI_INT, GENERAL_PROCESS, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            // recv index of row
+            MPI_Recv(&rowI, 1, MPI_INT, GENERAL_PROCESS, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
-        MPI_Send(resultBatch.data(), count, MPI_INT, GENERAL_PROCESS, 0, MPI_COMM_WORLD);
+            printf("Get %u row\n", rowI);
+            for (int i = 0; i < N;i++)
+                printf("%u ", row[i]);
 
+            printf("\n");
+
+            diagonalElement = row[rowI];
+            statusWork = STATUS_OK;
+            MPI_Send(&statusWork, 1, MPI_INT, GENERAL_PROCESS, 1, MPI_COMM_WORLD);
+            MPI_Send(&diagonalElement, 1, MPI_INT, GENERAL_PROCESS, 0, MPI_COMM_WORLD);
+
+            printf("Diagonal element: %d\n", diagonalElement);
+
+            if (rowI == N) {
+                statusWork = STATUS_NOT_FOUND;
+                MPI_Send(&statusWork, 1, MPI_INT, GENERAL_PROCESS, 1, MPI_COMM_WORLD);
+                break;
+            }               
+        }
     }
 
     MPI_Finalize();
