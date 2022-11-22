@@ -66,7 +66,6 @@ int main7()
         printf("\nCurrent chunk:\n");
         for (int i = 0;i < lastProcBatch;i++)
         {
-            sourceArray[i] = rand() % 100 + 1;
             printf("%u ", chunk[i]);
         }
 
@@ -89,7 +88,6 @@ int main7()
         printf("\nCurrent chunk:\n");
         for (int i = 0;i < batch;i++)
         {
-            sourceArray[i] = rand() % 100 + 1;
             printf("%u ", chunk[i]);
         }
 
