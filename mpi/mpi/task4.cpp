@@ -9,7 +9,6 @@
 #include <iostream>
 
 
-
 // mpiexec -n 4 mpi.exe
 
 int main4()
