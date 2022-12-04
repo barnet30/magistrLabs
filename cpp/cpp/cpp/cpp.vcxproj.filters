@@ -32,5 +32,8 @@
     <ClInclude Include="task2.h">
       <Filter>Source Files\12.09.22</Filter>
     </ClInclude>
+    <ClInclude Include="task3.h">
+      <Filter>Source Files\12.09.22</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

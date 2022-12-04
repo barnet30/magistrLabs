@@ -8,5 +8,5 @@ void iter(t1* m, t2 l, t3(*f)(t1 o)) {
 
 template <class t1>
 void showSquare(t1 el) {
-    std::cout << "element^2 = " << el * el << std::endl;
+    std::cout << el * el << std::endl;
 };
