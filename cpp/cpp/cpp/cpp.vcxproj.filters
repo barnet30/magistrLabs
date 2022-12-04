@@ -13,10 +13,24 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Source Files\12.09.22">
+      <UniqueIdentifier>{aad53fed-8556-44de-9bae-44e3534b402e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="cpp.cpp">
+    <ClCompile Include="lab1.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="main.cpp">
+      <Filter>Source Files\12.09.22</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="task1.h">
+      <Filter>Source Files\12.09.22</Filter>
+    </ClInclude>
+    <ClInclude Include="task2.h">
+      <Filter>Source Files\12.09.22</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
