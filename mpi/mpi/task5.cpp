@@ -19,7 +19,7 @@ using namespace std;
 
 // mpiexec -n 4 mpi.exe
 
-int main5()
+int main()
 {
     const int N = 5;
     int diagonalElement;

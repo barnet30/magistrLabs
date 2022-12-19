@@ -25,7 +25,7 @@ int calcScalar(int* a, int* b, int size) {
     return result;
 }
 
-int main()
+int main8()
 {
     const int N = 10;
     const int GENERAL_PROCESS = 0;
