@@ -90,12 +90,52 @@ int Queue<T>::size() {
     return count;
 }
 
-template <class X>
-bool Queue<X>::isEmpty() {
+template <class T>
+bool Queue<T>::isEmpty() {
     return (size() == 0);
 }
 
-template <class X>
-bool Queue<X>::isFull() {
+template <class T>
+bool Queue<T>::isFull() {
     return (size() == capacity);
+}
+
+
+class JustInt 
+{
+public:
+    int a;
+    JustInt(int temp) {
+        a = temp;
+    }
+    void doSmth() {
+        std::cout << a;
+    }
+};
+
+template<class T>
+class ClassTemplate {
+public:
+    T elem;
+    ClassTemplate(T val) {
+        elem = val;
+    }
+    void tmplDoSmth() {
+        std::cout << "Hello, world!";
+    }
+    void tmplDo2() {
+        JustInt test(this.elem);
+        test.doSmth();
+    }
+};
+
+int main() {
+    ClassTemplate<int> a(2);
+    a.tmplDoSmth();
+    a.tmplDo2(); // OK
+
+
+    ClassTemplate<std::string[]> b(new string{ "str1", "str2" });
+    b.tmplDoSmth();
+    b.tmplDo2(); // should error
 }
