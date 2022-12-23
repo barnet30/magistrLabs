@@ -132,6 +132,8 @@
   <ItemGroup>
     <ClInclude Include="Queue.h" />
     <ClInclude Include="QueuePtr.h" />
+    <ClInclude Include="Stack.h" />
+    <ClInclude Include="StackPair.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -1,8 +1,10 @@
 #include <iostream>
 #include "QueuePtr.h"
+#include "StackPair.h"
 
 int main()
 {
+    cout << "TASK 1\n";
     Queue<int*> queue_ptr(4);
 
     queue_ptr.push(new int{ 1 });
@@ -35,4 +37,27 @@ int main()
     else {
         cout << "The queue of ptrs is not empty\n";
     }
+
+    cout << "\nTASK 2\n";
+
+    Stack<double> stack;
+    stack.push(3.14);
+    cout << "Top: " << stack.top() << endl;
+    stack.push(2.67);
+
+    cout << "Stack: " << stack << endl;
+
+    stack.pop();
+    cout << "After pop: " << stack << endl;
+
+    Stack<pair<string, int>> pairStack;
+    pairStack.push(make_pair("sss", 1));
+    pairStack.push(make_pair("wrwr", 2));
+
+    cout << "Pair stack: " << pairStack << endl;
+
+    pairStack.pop();
+    cout << "Pair stack after pop: " << pairStack << endl;
+
+    return EXIT_SUCCESS;
 }
